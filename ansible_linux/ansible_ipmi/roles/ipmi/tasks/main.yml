@@ -1,0 +1,59 @@
+---
+
+- include_vars: var.yml
+- name: copy ipmi.tar.gz
+  copy: src=ipmitool-1.8.15-rc1.tar.gz dest=/usr/local/src/ipmitool-1.8.15-rc1.tar.gz
+
+- name: unzip ipmi.tar.gz
+  shell: cd /usr/local/src/ && tar xf ipmitool-1.8.15-rc1.tar.gz
+
+- name: install ipmi
+  shell: cd /usr/local/src/ipmitool-1.8.15-rc1 && ./configure --prefix=/usr/local/ipmitool && make && make install
+
+- name: if /bin/ipmitool exist
+  shell: ls /bin/ipmitool
+  register: ipmitool
+  ignore_errors: True
+
+- name: link ipmitool to /bin
+  shell: ln -s /usr/local/ipmitool/bin/ipmitool /bin/
+  when: ipmitool|failed
+
+- name: mode devintf module
+  shell: modprobe ipmi_devintf
+
+- name: mode poweroff module
+  shell: modprobe ipmi_poweroff
+
+- name: mode watchdog module
+  shell: modprobe ipmi_watchdog
+
+- name: copy modprobe file
+  copy: src=module dest=/tmp/module
+
+- name: if the module exist onboot
+  shell: cat /etc/rc.local | grep poweroff
+  register: modeexist
+  ignore_errors: True
+
+- name: mode the module onboot
+  shell: cat /tmp/module >> /etc/rc.local
+  when: modeexist|failed
+
+- name: set ipmitool ipaddress to static
+  shell: ipmitool lan set 1 ipsrc static
+
+- name: set ipmitool ipaddress
+  shell: ipmitool lan set 1 ipaddress {{ ipmi_add }}
+
+- name: set ipmitool ip netmask
+  shell: ipmitool lan set 1 netmask 255.255.255.0
+
+- name: set ipmitool user admin
+  shell: ipmitool user set name 2 {{ user }}
+
+- name: set ipmitool admin password
+  shell: ipmitool user set password 2 {{ password }}
+
+- name: set ipmitool access on
+  shell: ipmitool -I open lan set 1 access on

@@ -1,0 +1,29 @@
+---
+
+- shell: rpm -qa | grep subversion
+  register: rpm
+  ignore_errors: yes
+
+- name: install svn
+  yum: name={{item}}  state=present
+  with_items:
+    - subversion
+    - subversion-devel 
+  when: rpm | failed
+
+- name: test  svn user file
+  shell: ls /root/.subversion/auth/svn.simple/34a0ab7536d8bd0ab1e7f6145ef39e86
+  register: svnfile
+  ignore_errors: yes
+
+- name: svn code user file exist
+  subversion: repo={{ svn_url }} dest={{ local_url }}
+  when: svnfile | success
+
+- name: svn file user file not exist
+  subversion: repo={{ svn_url }} dest={{ local_url }}  username="xxxx" password="xxx"
+  when: svnfile | failed
+
+- name: change log file mode
+  file: path={{ local_url }}/logs mode=777
+  ignore_errors: yes

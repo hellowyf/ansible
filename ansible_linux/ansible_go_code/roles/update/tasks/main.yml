@@ -1,0 +1,91 @@
+---
+#get code from git
+- name: git clone code
+  connection: local
+  run_once: True
+  git: repo={{git_repo}} dest=/usr/local/src/go/src/git.com/arch/{{project}} force=yes
+#取时间戳作为版本迭代
+- name: get time
+  connection: local
+  run_once: True
+  shell: date +%s
+  register: date
+#创建项目存储目录
+- name: mkdir to store file
+  connection: local
+  run_once: True
+  file: dest=/data/www/{{project}}/ state=directory
+#编译go，并输出到指定目录，文件名为project+time
+- name: build
+  connection: local
+  run_once: True
+  shell: cd $GOPATH/src/git.com/arch/{{project}}/ && go build -a -o /data/www/{{project}}/{{project}}-{{item}}
+  with_items: date.stdout
+- name: conf file mv to /data/www/
+  connection: local
+  run_once: True
+  shell: mv $GOPATH/src/git.com/arch/{{project}}/config.conf /data/www/{{project}}/{{project}}-{{item}}.conf
+  with_items: date.stdout
+#更换版本文件
+- name: prepare now and old txt 1
+  connection: local
+  run_once: True
+  shell: cd /data/www/{{project}} && mv now.txt old.txt 
+  ignore_errors: True
+  
+- name: prepare now and old txt 2
+  connection: local
+  run_once: True
+  shell: echo "{{project}}-{{item}}" > /data/www/{{project}}/now.txt
+  with_items: date.stdout
+#保留10个版本，删除多余
+- name: get number of version
+  connection: local
+  run_once: True
+  shell: ls -l /data/www/{{project}}/  | wc -l
+  register: number
+
+- name: get oldest version
+  connection: local
+  run_once: True
+  shell: ls -lut /data/www/{{project}}/ | grep -v txt | tail -1 | awk -F" " '{print $9}'
+  register: oldest
+
+- name: remove oldest version
+  connection: local
+  run_once: True
+  shell: rm -rf /data/www/{{project}}/{{item}}
+  with_items: oldest.stdout
+  when: number.stdout|int > 10
+#删除编译目录
+- name: rm $GOPATH
+  connection: local
+  run_once: True
+  shell: rm -rf $GOPATH/src/git.com/arch/{{project}}/
+#rsync到线上目录
+- name: mkdir 
+  file: dest=/data/www/shake.com state=directory
+  when: project == "guard"
+- name: rsync go to online when project is guard
+  synchronize: src=/data/www/{{project}}/{{project}}-{{item}} dest=/data/www/shake.com/{{project}} checksum=yes archive=yes
+  when: project == "guard"
+  with_items: date.stdout
+#- name: rsync to conf online when project is guard
+#  synchronize: src=/data/www/{{project}}/{{project}}-{{item}}.conf dest=/data/www/shake.com/config.conf checksum=yes archive=yes
+#  when: project == "guard"
+#  with_items: date.stdout
+
+- name: mkdir 
+  file: dest=/data/www/pool.com state=directory
+  when: project == "pool"
+- name: rsync go to online when project is pool
+  synchronize: src=/data/www/{{project}}/{{project}}-{{item}} dest=/data/www/pool.com/{{project}} checksum=yes archive=yes
+  when: project == "pool"
+  with_items: date.stdout
+#- name: rsync conf to online when project is pool
+#  synchronize: src=/data/www/{{project}}/{{project}}-{{item}}.conf dest=/data/www/pool.com/config.conf checksum=yes archive=yes
+#  when: project == "pool"
+#  with_items: date.stdout
+
+- name: restart supervisor
+  shell: supervisorctl restart {{project}}

@@ -1,0 +1,12 @@
+---
+- include_vars: var.yml
+
+- name: config zabbix.conf
+  template: src=zabbix_agentd.conf.j2 dest=/usr/local/zabbix/etc/zabbix_agentd.conf 
+
+- name: kill zabbix_agentd
+  shell: killall -9 zabbix_agentd
+  ignore_errors: True
+
+- name: start zabbix
+  shell: /usr/local/zabbix/sbin/zabbix_agentd -c /usr/local/zabbix/etc/zabbix_agentd.conf

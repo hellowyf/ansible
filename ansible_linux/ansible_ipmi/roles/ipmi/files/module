@@ -1,0 +1,3 @@
+modprobe ipmi_devintf
+modprobe ipmi_poweroff
+modprobe ipmi_watchdog

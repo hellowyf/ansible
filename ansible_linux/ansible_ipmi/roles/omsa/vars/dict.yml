@@ -1,0 +1,9 @@
+---
+link:
+  srvadmin:
+    src: /opt/dell/srvadmin/sbin/srvadmin-services.sh
+    dest: /etc/init.d/srvadmin
+  omconfig:
+    src: /opt/dell/srvadmin/sbin/omconfig
+    dest: /usr/sbin/omconfig
+

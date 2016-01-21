@@ -1,0 +1,55 @@
+--
+- name: get old version
+  connection: local
+  run_once: True
+  shell: cat /data/www/{{project}}/old.txt
+  register: old
+- name: get now version
+  connection: local
+  run_once: True
+  shell: cat /data/www/{{project}}/old.txt
+  register: now
+
+- name: rm -rf nowversion
+  connection: local
+  run_once: True
+  shell: rm -rf /data/www/{{{project}}/{{item}}
+  with_items: now.stdout
+
+- name: mv old to new
+  connection: local
+  run_once: True
+  shell: cd /data/www/{{project}} && mv old.txt now.txt
+
+- name: get last old version
+  connection: local
+  run_once: True
+  shell: ls /data/www/{{project}}/ | grep {{project}} | tail -2 | head -1 | awk -F" " '{print $9}'
+  register: last_version
+
+- name: echo lastversion to old.txt
+  connection: local
+  run_once: True
+  shell: echo "{{item}}" > /data/www/{{project}}/old.txt
+  with_items: last_version.stdout
+
+- name: rsync to online when project is guard
+  synchronize: src=/data/www/{{project}}/{{item}} dest=/data/www/shake.com/{{project}} checksum=yes archive=yes
+  when: project == "guard"
+  with_items: old.stdout
+- name: rsync to conf online when project is guard
+  synchronize: src=/data/www/{{project}}/{{project}}-{{item}}.conf dest=/data/www/shake.com/config.conf checksum=yes archive=yes
+  when: project == "guard"
+  with_items: date.stdout
+
+- name: rsync to online when project is pool
+  synchronize: src=/data/www/{{project}}/{{item}} dest=/data/www/pool.com/{{project}} checksum=yes archive=yes
+  when: project == "pool"
+  with_items: old.stdout
+- name: rsync to conf online when project is guard
+  synchronize: src=/data/www/{{project}}/{{project}}-{{item}}.conf dest=/data/www/pool.com/config.conf checksum=yes archive=yes
+  when: project == "pool"
+  with_items: date.stdout
+
+- name: restart supervisor
+  shell: supervisorctl restart {{project}}

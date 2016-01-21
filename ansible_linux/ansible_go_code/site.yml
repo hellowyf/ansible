@@ -1,0 +1,16 @@
+---
+- hosts: all
+  gather_facts: False
+  roles:
+    - update
+  tags: update
+#- hosts: all
+#  gather_facts: False
+#  roles:
+#    - rollback
+#  tags: rollback
+#- hosts: all
+#  gather_facts: False
+#  roles:
+#    - conf
+#  tags: conf

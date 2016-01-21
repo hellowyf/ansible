@@ -1,0 +1,8 @@
+file: /boot/grub/grub.conf
+x: serial --unit=1 --speed=115200 --word=8 --parity=no --stop=1\nterminal --timeout=5 serial console
+y: \1 console=tty0 console=ttyS1,115200n8
+z: /opt/dell/srvadmin/sbin/srvadmin-services.sh
+a: /etc/init.d/srvadmin
+b: /opt/dell/srvadmin/sbin/omconfig
+c: /usr/sbin/omconfig
+ 

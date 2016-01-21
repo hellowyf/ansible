@@ -1,0 +1,83 @@
+---
+- include_vars: dict.yml
+
+- name: Modify the configuration(1)
+  replace: dest=/boot/grub/grub.conf regexp='(^s.*\.gz$)' replace='serial --unit=1 --speed=115200 --word=8 --parity=no --stop=1\nterminal --timeout=5 serial console' backup=yes
+
+- name: Modify the configuration(2)
+  replace: dest=/boot/grub/grub.conf regexp='(^\tkernel.+$)' replace='\1 console=tty0 console=ttyS1,115200n8' backup=yes
+
+- name: Modify the configuration(3)
+  shell: echo ttyS1 >> /etc/securetty
+
+#- name: create repobackup
+#  file: dest=/etc/yum.repos.d/backup state=directory
+#
+#- name: backuping
+#  shell: mv /etc/yum.repos.d/CentOS*  /etc/yum.repos.d/backup/
+
+- name: if dell.repo exist in yum repo
+  shell: ls /etc/yum.repos.d/dell.repo
+  register: dellrepo
+  ignore_errors: True
+
+- name: transport  repofile
+  copy: src=dell.repo dest=/etc/yum.repos.d/
+  when: dellrepo|failed
+
+#- name: transport  cetos5 package
+#  copy: src=rhel5/  dest=/tmp/package/
+#  when: ansible_lsb.description == "CentOS release 5.9 (Final)"
+#  ignore_errors: True 
+
+#- name: transport cetos6 package
+#  copy: src=rhel6/ dest=/tmp/package/
+#  when: ansible_lsb.description == "CentOS release 6.4 (Final)"
+#  ignore_errors: True 
+
+- name: install srvadmin
+  yum: name=srvadmin-base,srvadmin-storageservices,srvadmin-xmlsup,srvadmin-omcommon  state=present
+
+#- name: restore file
+#  shell: mv /etc/yum.repos.d/backup/*  /etc/yum.repos.d/
+
+- name: link file
+  file: src={{ item.value.src }} dest={{item.value.dest}} state=link
+  with_dict: link
+    
+- name: start service
+  service: name=srvadmin state=restarted
+
+- name: configuration R720 or R620 or R420 BIOS(1)
+  shell: "/opt/dell/srvadmin/sbin/omconfig chassis  biossetup attribute=serialcom setting=com2"
+  when: ansible_product_name ==  "PowerEdge R720xd" or ansible_product_name ==  "PowerEdge R620" or ansible_product_name == "PowerEdge R420"
+  ignore_errors: True 
+
+- name: configuration R720 or R620 or R420 BIOS(2)
+  shell: "/opt/dell/srvadmin/sbin/omconfig chassis biossetup attribute=SerialPortAddress setting=Serial1Com1Serial2Com2"
+  when: ansible_product_name ==  "PowerEdge R720xd" or ansible_product_name ==  "PowerEdge R620" or ansible_product_name == "PowerEdge R420"
+  ignore_errors: True 
+
+- name: configuration R720 or R620 or R420 BIOS(3)
+  shell: "/opt/dell/srvadmin/sbin/omconfig chassis biossetup attribute=ExtSerialConnector setting=Serial2"
+  when: ansible_product_name ==  "PowerEdge R720xd" or ansible_product_name ==  "PowerEdge R620" or ansible_product_name == "PowerEdge R420"
+  ignore_errors: True 
+
+- name: configuration R410 BIOS(1)
+  shell: "/opt/dell/srvadmin/sbin/omconfig chassis  biossetup attribute=serialcom setting=com2"
+  when: ansible_product_name == "PowerEdge R410"
+  ignore_errors: True 
+
+- name: configuration R410 BIOS(2)
+  shell: "/opt/dell/srvadmin/sbin/omconfig chassis biossetup attribute=extserial setting=serialdev2"
+  when: ansible_product_name == "PowerEdge R410"
+  ignore_errors: True 
+
+- name: configuration R410 BIOS(3)
+  shell: "/opt/dell/srvadmin/sbin/omconfig chassis biossetup attribute=serialportaddr  setting=default"
+  when: ansible_product_name == "PowerEdge R410"
+  ignore_errors: True 
+
+- name: delete file
+  shell: rm -rf /etc/yum.repos.d/{backup/,dell.repo} /tmp/package/
+

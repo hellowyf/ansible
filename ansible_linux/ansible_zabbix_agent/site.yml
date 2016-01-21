@@ -1,0 +1,12 @@
+---
+- name: install zabbix
+  hosts: all
+  roles: 
+    - install
+  tags: install
+
+- name: config zabbix
+  hosts: all
+  roles:
+    - config
+  tags: config

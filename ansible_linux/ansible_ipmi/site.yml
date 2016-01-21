@@ -1,0 +1,13 @@
+---
+- name: config omsa
+  hosts: all
+  roles:
+   - omsa
+  tags: omsa
+  
+- name: config ipmi
+  hosts: all
+  roles:
+   - ipmi
+  tags: ipmi
+  

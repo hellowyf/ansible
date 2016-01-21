@@ -1,0 +1,31 @@
+---
+
+- name: git clone code
+  connection: local
+  run_once: True
+  git: repo={{git_repo}} dest=/tmp/{{project}} force=yes
+
+- name: get timestamp
+  connection: local
+  run_once: True
+  shell: date +%s
+  register: date
+
+- name: mv conf to /data/www
+  connection: local
+  run_once: True
+  shell: mv /tmp/{{project}}/config.conf /data/www/{{project}}/{{project}}-{{item}}.conf
+  with_items: date.stdout
+
+- name: rsync to conf online when project is guard
+  synchronize: src=/data/www/{{project}}/{{project}}-{{item}}.conf dest=/data/www/shake.com/config.conf checksum=yes archive=yes
+  when: project == "guard"
+  with_items: date.stdout
+
+- name: rsync conf to online when project is pool
+  synchronize: src=/data/www/{{project}}/{{project}}-{{item}}.conf dest=/data/www/pool.com/config.conf checksum=yes archive=yes
+  when: project == "pool"
+  with_items: date.stdout
+
+- name: restart supervisor
+  shell: supervisorctl restart {{project}}

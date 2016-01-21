@@ -1,0 +1,44 @@
+---
+#从git上面取代码
+
+- name: get code from git
+  connection: local
+  run_once: True
+  git: repo={{git_repo}} dest=/tmp/{{project}}  accept_hostkey=True force=yes
+#打成war包
+- name: build package
+  connection: local
+  run_once: True
+  shell: cd /tmp/{{project}}/ && mvn clean
+
+- name: build package
+  connection: local
+  run_once: True
+  shell: cd /tmp/{{project}}/ && mvn install -Dmaven.test.skip=true -Paws
+
+- name: get war package
+  connection: local
+  run_once: True
+  shell: ls /tmp/{{project}}/target/ | grep war$
+  register: war
+#将war包放在指定/data/www/project目录下
+- name: mkdir to store war package
+  connection: local
+  run_once: True
+  file: dest=/data/www/{{project}}/ state=directory
+
+- name: cp war package to backup
+  connection: local
+  run_once: True
+  shell: cp /tmp/{{project}}/target/{{item}} /data/www/{{project}}/
+  with_items: war.stdout
+
+- name: rm /tmp/m
+  connection: local
+  run_once: True
+  shell: rm -rf /tmp/{{project}}
+
+- name: rsync war package to online 3 | rsync war
+  synchronize: src=/data/www/{{project}}/{{item}} dest=/data/www/{{project}}/ checksum=yes
+  with_items: war.stdout
+

@@ -1,0 +1,7 @@
+---
+- name: install python
+  hosts: all
+  gather_facts: False
+  roles:
+    - ins_python
+

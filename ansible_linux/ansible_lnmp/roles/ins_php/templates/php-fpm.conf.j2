@@ -1,0 +1,42 @@
+
+;;;;;;;;;;;;;;;;;;;;;
+; FPM Configuration ;
+;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;
+; Global Options ;
+;;;;;;;;;;;;;;;;;;
+
+[global]
+pid = /var/run/php-fpm/php-fpm.pid
+error_log = /data/logs/php-fpm.log
+log_level = warning
+daemonize = yes
+
+;;;;;;;;;;;;;;;;;;;;
+; Pool Definitions ;
+;;;;;;;;;;;;;;;;;;;;
+
+[www]
+listen = 0.0.0.0:10080
+user = www
+group = www
+pm = static
+
+{% if ansible_memtotal_mb <= '6000' %}
+pm.max_children = 20
+{% elif ansible_memtotal_mb > '6000' and ansible_memtotal_mb <= '12000' %}
+pm.max_children = 100
+{% else %}
+pm.max_children = 200
+{% endif %}
+
+
+request_terminate_timeout = 30
+request_slowlog_timeout = 30
+catch_workers_output = yes
+pm.max_requests = 5000
+pm.status_path = /status
+ping.path = /ping
+rlimit_files = 51200
+slowlog = /data/logs/php-fpm-slow.log

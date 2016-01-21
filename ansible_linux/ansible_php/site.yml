@@ -1,0 +1,6 @@
+- name: svn code file
+  hosts: all
+  gather_facts: False
+  roles: 
+    - svn
+  tags: svn

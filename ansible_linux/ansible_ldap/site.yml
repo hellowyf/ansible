@@ -1,0 +1,11 @@
+- hosts: all
+  gather_facts: False
+  roles: 
+    - server
+  tags: server
+
+- hosts: all
+  gather_facts: False
+  roles:
+    - clients
+  tags: client

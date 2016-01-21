@@ -1,0 +1,47 @@
+---
+- name: Ensure dependencies installed
+  yum: name={{ item }} state=present
+  with_items:
+    - gcc
+    - gcc-c++
+    - make
+    - cmake
+
+- name: chack if python2.7 installed
+  stat: path=/usr/local/bin/python2.7
+  register: python
+
+- name: download python package
+  get_url: url=https://www.python.org/ftp/python/2.7.8/Python-2.7.8.tgz dest=/usr/local/src/Python-2.7.8.tar.gz
+  when: not python.stat.exists
+
+- name: unpack package
+  unarchive: src=/usr/local/src/Python-2.7.8.tar.gz dest=/tmp/ copy=no
+  when: not python.stat.exists
+
+- name: config make and install
+  shell: cd /tmp/Python-2.7.8 && {{ item }}
+  with_items: 
+    - ./configure --prefix=/usr/local --enable-unicode=ucs4 --enable-shared LDFLAGS='-Wl,-rpath /usr/local/lib'
+    - make
+    - make altinstall
+  when: not python.stat.exists
+
+- name: create symlink in /usr/local/bin
+  file: path=/usr/local/bin/python src=/usr/local/bin/python2.7 state=link
+  when: not python.stat.exists
+
+- name: copy get-pip.py
+  copy: src=get-pip.py dest=/tmp/get-pip.py
+
+- name: install pip
+  shell: /usr/local/bin/python /tmp/get-pip.py
+
+- name: update tools
+  pip: name="setuptools" state=latest executable=/usr/local/bin/pip
+#  environment:
+#    PATH: "/usr/local/bin:/usr/bin/:/usr/sbin:/bin:/sbin"
+
+- name: install other packages
+  pip: name="{{package|replace(',',' ')}}" state=latest executable=/usr/local/bin/pip
+  when: package is defined

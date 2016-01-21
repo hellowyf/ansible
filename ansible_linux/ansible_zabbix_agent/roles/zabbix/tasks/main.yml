@@ -1,0 +1,34 @@
+---
+- include_vars: var.yml
+
+- name: test zabbix exist
+  shell: rpm -qa | grep zabbix
+  register: rpmzabbix
+  ignore_errors: True
+
+- name: copy zabbix agent file
+  copy: src=zabbix_agent-2.2.2-1.el6.x86_64.rpm dest=/usr/local/src/zabbix_agent-2.2.2-1.el6.x86_64.rpm
+  when: rpmzabbix | failed
+
+- name: install zabbix
+  yum: name=/usr/local/src/zabbix_agent-2.2.2-1.el6.x86_64.rpm state=present
+  when: rpmzabbix | failed
+
+- name: config zabbix.conf
+  template: src=zabbix_agentd.conf.j2 dest=/usr/local/zabbix/etc/zabbix_agentd.conf 
+
+- name: kill zabbix_agentd
+  shell: killall -9 zabbix_agentd
+  ignore_errors: True
+
+- name: start zabbix
+  shell: /usr/local/zabbix/sbin/zabbix_agentd -c /usr/local/zabbix/etc/zabbix_agentd.conf
+
+- name: if zabbix_agent exist in rc.local
+  shell: cat /etc/rc.local | grep zabbix
+  register: zabbix
+  ignore_errors: True
+
+- name: rc.local
+  shell: echo '/usr/local/zabbix/sbin/zabbix_agentd -c /usr/local/zabbix/etc/zabbix_agentd.conf' >> /etc/rc.local
+  when: zabbix | failed
