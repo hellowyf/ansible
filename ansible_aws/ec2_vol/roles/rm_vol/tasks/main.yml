@@ -1,0 +1,7 @@
+---
+
+- local_action:
+    module: ec2_vol
+    region: "cn-north-1"
+    id: "{{ vol_id }}"
+    state: absent

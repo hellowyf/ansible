@@ -1,0 +1,17 @@
+---
+
+- name: create ami
+  hosts: localhost
+  gather_facts: False
+  connection: local
+  roles:
+    - create_ami
+  tags: create
+
+- name: del ami
+  hosts: localhost
+  connection: local
+  gather_facts: False
+  roles:
+    - del_ami
+  tags: del

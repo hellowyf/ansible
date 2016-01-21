@@ -1,0 +1,17 @@
+---
+
+- name: connect eip with ec2
+  hosts: localhost
+  gather_facts: False
+  connection: local
+  roles:
+    - connect_eip
+  tags: connect
+
+- name: disconnect eip with ec2
+  hosts: localhost
+  gather_facts: False
+  connection: local
+  roles:
+    - disconnect_eip
+  tags: disconnect

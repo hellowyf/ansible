@@ -1,0 +1,19 @@
+---
+#指定tag的k和v执行开机关机操作
+  tag_key: class
+  tag_value: test
+#更改实例的类型
+  modify_type: t2.micro
+#开启实例使用的变量。
+  instance_type: c3.4xlarge
+  image: ami-be138187
+  security_group: launch-wizard-68
+#指定tag开启一定数量的机器
+  exact_count: 1
+  count_tag_class: 
+  count_tag_env: 
+  count_tag_business: mobile_pay
+  count_tag_interface: 
+#添加卷的大小和卷的名称
+  vol_size: 
+  dev_name: 

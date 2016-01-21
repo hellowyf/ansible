@@ -1,0 +1,11 @@
+---
+#指定tag的k和v，执行添加磁盘，查看机器磁盘情况
+  tag_key: class
+  tag_value: test
+#添加卷的大小和卷的名称
+  vol_size: 5
+  device_name: /dev/sdg
+#创建ssd硬盘，指定iops，若创建磁盘，则不需要设置
+  iops: 100
+#指定删除卷的id
+  vol_id:

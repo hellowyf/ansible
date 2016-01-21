@@ -1,0 +1,13 @@
+---
+
+- name: check if instance with name tag exists
+  command: aws ec2 describe-instances
+           --filter Name=tag:{{tag_key}},Values={{tag_value}}
+          --query 'Reservations[*].Instances[0].InstanceId' --output json
+  register: instanceid
+
+- name: modify ec2 type
+  command: aws ec2 modify-instance-attribute --instance-id {{ item }} --instance-type {{ modify_type }}
+  when: instanceid.stdout!="None"
+  with_items: instanceid.stdout
+  ignore_errors: True

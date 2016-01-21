@@ -1,0 +1,25 @@
+---
+
+- name: add ec2 to elb
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  roles:
+    - ec2
+  tags: ec2
+
+- name: create elb
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  roles:
+    - create_elb
+  tags: create
+
+- name: del_elb
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  roles:
+    - del_elb
+  tags: del

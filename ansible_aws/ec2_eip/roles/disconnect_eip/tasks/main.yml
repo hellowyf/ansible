@@ -1,0 +1,17 @@
+---
+
+- include_vars: var.yml
+
+- name: check if instance with name tag exists
+  command: aws ec2 describe-instances
+           --filter Name=tag:{{tag_key}},Values={{tag_value}}
+          --query 'Reservations[*].Instances[0].{instanceid:InstanceId,ip:PublicIpAddress}' --output json
+  register: instanceid
+
+- local_action:
+    module: ec2_eip
+    region: cn-north-1
+    instance_id: "{{ item.instanceid }}"
+    ip: "{{ item.ip}}"
+    state: absent
+  with_items: instanceid.stdout

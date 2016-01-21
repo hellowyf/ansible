@@ -1,0 +1,8 @@
+---
+- include_vars: var.yml
+
+- local_action:
+    module: ec2_elb_lb
+    region: cn-north-1
+    name: "{{ elb_name }}"
+    state: absent

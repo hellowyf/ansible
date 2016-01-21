@@ -1,0 +1,32 @@
+---
+
+- include_vars: var.yml
+
+- name: check if instance with name tag exists
+  command: aws ec2 describe-instances
+           --filter Name=tag:{{tag_key}},Values={{tag_value}}
+          --query 'Reservations[*].Instances[0].InstanceId' --output json
+  register: instanceid
+
+- name: attach vol on ec2
+  local_action:
+    module: ec2_vol
+    region: "cn-north-1"
+    instance: "{{ item }}"
+    volume_size: "{{ vol_size }}"
+    device_name: "{{ device_name }}"
+  when: instanceid.stdout!="None" and iops is not defined 
+  with_items: instanceid.stdout
+  ignore_errors: True
+
+- name: attach vol on ec2
+  local_action:
+    module: ec2_vol
+    region: "cn-north-1"
+    instance: "{{ item }}"
+    volume_size: "{{ vol_size }}"
+    device_name: "{{ device_name }}"
+    iops: "{{ iops }}"
+  when: instanceid.stdout!="None" and iops is defined 
+  with_items: instanceid.stdout
+  ignore_errors: True

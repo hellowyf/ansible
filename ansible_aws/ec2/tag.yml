@@ -1,0 +1,8 @@
+---
+#实例tag的变量字典，如果变量的key对应的value没有值，用""替代表示值为空
+  name: "pf_MPP_pay_webserver_01"
+  hostname: "AWS-MPP.pay-_webserver001"
+  class: "webserver"
+  enviroment: "production"
+  business: "mobile_pay"
+  interface: ""

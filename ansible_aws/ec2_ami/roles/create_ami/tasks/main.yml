@@ -1,0 +1,10 @@
+---
+- include_vars: var.yml
+
+- local_action:
+    region: cn-north-1
+    module: ec2_ami
+    instance_id: "{{ instance_id }}"
+    wait: yes
+    name: "{{ ami_name }}"
+

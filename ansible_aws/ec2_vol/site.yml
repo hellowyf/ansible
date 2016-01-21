@@ -1,0 +1,18 @@
+---
+
+- name: attach vol on ec2
+  hosts: localhost
+  gather_facts: False
+  connection: local
+  roles:
+    - attach_vol
+  tags: attach
+
+
+- name: rm vol on ec2
+  hosts: localhost
+  gather_facts: False
+  connection: local
+  roles:
+    - rm_vol
+  tags: rm

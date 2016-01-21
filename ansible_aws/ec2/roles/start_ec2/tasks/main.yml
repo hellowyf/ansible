@@ -1,0 +1,19 @@
+---
+
+- include_vars: var.yml
+
+- name: check if instance with name tag exists
+  command: aws ec2 describe-instances
+           --filter Name=tag:{{tag_key}},Values={{tag_value}}
+          --query 'Reservations[*].Instances[0].InstanceId' --output json
+  register: instanceid
+
+- name: EC2 basic provisioning create
+  local_action:
+     module: ec2
+     region: cn-north-1
+     instance_ids: "{{ item }}"
+     state: running
+  when: instanceid.stdout!="None"  
+  with_items: instanceid.stdout
+  ignore_errors: True

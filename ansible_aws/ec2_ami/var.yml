@@ -1,0 +1,7 @@
+---
+#创建ami使用实例的id
+  instance_id: i-2ecd2016
+#新建ami的名称
+  ami_name: test
+#需要删除的ami的id
+  ami_id: ami-b61f8d8f

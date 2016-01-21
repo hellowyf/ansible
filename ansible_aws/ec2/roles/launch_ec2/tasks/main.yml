@@ -1,0 +1,25 @@
+---
+- include_vars: var.yml
+- include_vars: tag.yml
+
+- name: launch ec2
+  local_action:
+    module: ec2
+    region: "cn-north-1"
+    key_name: "klyg"
+    instance_type: "{{instance_type}}"
+    image: "{{image}}"
+    group: "{{security_group}}"
+    instance_tags:
+      名称: "{{name}}"
+      class: "{{class}}"
+      hostname: "{{hostname}}"
+      enviroment: "{{enviroment}}"
+      business: "{{business}}"
+      interface: "{{interface}}"
+    exact_count: "{{ exact_count }}"
+    count_tag:
+      - class: "{{count_tag_class}}"
+      - enviroment: "{{count_tag_env}}"
+      - business: "{{count_tag_business}}"
+      - interface: "{{count_tag_interface}}"

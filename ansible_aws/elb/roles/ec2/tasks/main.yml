@@ -1,0 +1,33 @@
+---
+
+- include_vars: var.yml
+
+- name: ping protocol
+  shell: echo "{{ ec2_mode }}"
+  register: ec2
+
+- name: check if instance with name tag exists
+  command: aws ec2 describe-instances
+           --filter Name=tag:{{tag_key}},Values={{tag_value}}
+          --query 'Reservations[*].Instances[0].InstanceId' --output json
+  register: instanceid
+
+- name: add ec2 from elb
+  local_action: 
+    module: ec2_elb
+    region: cn-north-1
+    ec2_elbs: "{{ elb_name }}"
+    instance_id: "{{ item }}"
+    state: present
+  with_items: instanceid.stdout
+  when: ec2.stdout == "add"
+
+- name: del ec2 from elb
+  local_action: 
+    module: ec2_elb
+    region: cn-north-1
+    ec2_elbs: "{{ elb_name }}"
+    instance_id: "{{ item }}"
+    state: absent 
+  with_items: instanceid.stdout
+  when: ec2.stdout == "del"

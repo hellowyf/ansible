@@ -1,0 +1,125 @@
+---
+- include_vars: var.yml
+
+## VAR SETUP
+- name: 'Set CentOS directory prefix'
+  set_fact: etc_prefix=/etc
+  when: ansible_os_family == "RedHat"
+
+- name: 'Set CentOS haproxy config location'
+  set_fact: config_location=/etc/haproxy/haproxy.cfg
+  when: ansible_os_family == "RedHat"
+
+## PACKAGE INSTALL
+
+- name: 'Check epel repo'
+  stat: path=/etc/yum.repos.d/epel.repo
+  register: epel_file
+  when: ansible_pkg_mgr == 'yum'
+
+- name: 'Add epel repo'
+  template: src=epel.repo
+        dest=/etc/yum.repos.d/epel.repo
+        owner=root group=root mode=0644
+  when: ansible_pkg_mgr == 'yum' and not epel_file.stat.exists
+
+
+- name: 'Enable it'
+  service: name=haproxy enabled=yes
+
+- name: 'Ensure chroot directory exists'
+  file: name={{ haproxy_global.chroot }} state=directory
+  when: haproxy_global.chroot is defined and haproxy_global.chroot
+
+## ASSEMBLE CONFIG - FRONTEND
+
+- name: 'Create directory for the frontend'
+  file: path={{ etc_prefix }}/haproxy/frontends.d state=directory
+
+- name: 'Empty the folder if not already empty'
+  command: rm -f {{ etc_prefix }}/haproxy/frontends.d/*.cfg
+
+- name: 'Build up the frontends'
+  template: src=frontend.cfg dest={{ etc_prefix }}/haproxy/frontends.d/{{ item.name }}.cfg
+  with_items: haproxy_frontends
+  when: haproxy_frontends is defined
+
+#create instance.yml file
+
+- name: if instance.yml file exist
+  file: path=/tmp/instance.yml
+  register: instance_file
+  ignore_errors: True
+
+- name: touch instance.yml when file not exist
+  file: dest=/tmp/instance.yml state=touch mode=0644
+  when: instance_file | failed
+
+- name: clean instance.yml when file exist
+  shell: echo "" > /tmp/instance.yml
+  when: instance_file | success
+
+- name: create instance.yml
+  connection: local
+  shell: 'echo "{{ item.name }}": >> /tmp/instance.yml && aws ec2 describe-instances --filter Name=tag:group,Values=lvs --query "Reservations[*].Instances[0].[InstanceId,PrivateIpAddress]" --output text | sed "s/\t/: /g" | sed "s/^/\ \ /g" >> /tmp/instance.yml'
+  with_items: haproxy_backends
+  when: haproxy_backends is defined
+
+## ASSEMBLE CONFIG - BACKEND
+
+- name: 'Create directory for the backends'
+  file: path={{ etc_prefix }}/haproxy/backends.d state=directory
+
+- name: 'Empty the folder if not already empty'
+  command: rm -f {{ etc_prefix }}/haproxy/backends.d/*.cfg
+
+- include_vars: /tmp/instance.yml
+
+- name: 'Build up the backends'
+  template: src=backend.cfg dest={{ etc_prefix }}/haproxy/backends.d/{{ item.name }}.cfg
+  with_items: haproxy_backends
+  when: haproxy_backends is defined
+
+## ASSEMBLE CONFIG - LISTEN
+
+- name: 'Create directory for the listen sections'
+  file: path={{ etc_prefix }}/haproxy/listen.d state=directory
+
+- name: 'Empty the folder if not already empty'
+  command: rm -f {{ etc_prefix }}/haproxy/listen.d/*.cfg
+
+- name: 'Build up the listen sections'
+  template: src=listen.cfg dest={{ etc_prefix }}/haproxy/listen.d/{{ item.name }}.cfg
+  with_items: haproxy_listen
+  when: haproxy_listen is defined
+
+## ASSEMBLE CONFIG - GLOBAL & DEFAULT
+
+- name: 'Create  the compiled folder'
+  file: path={{ etc_prefix }}/haproxy/compiled state=directory
+
+- name: 'Empty the folder if not already empty'
+  command: rm -f {{ etc_prefix }}/haproxy/compiled/*.cfg
+
+- name: 'Build up the global config'
+  template: src=global.cfg dest={{ etc_prefix }}/haproxy/compiled/01-global.cfg
+  when: haproxy_global is defined
+
+- name: 'Build up the default config'
+  template: src=defaults.cfg dest={{ etc_prefix }}/haproxy/compiled/02-defaults.cfg
+  when: haproxy_defaults is defined
+
+## ASSEMBLE FINAL CONFIG
+
+- name: 'Assemble the backends configuration file'
+  assemble: src={{ etc_prefix }}/haproxy/backends.d dest={{ etc_prefix }}/haproxy/compiled/03-backends.cfg
+
+- name: 'Assemble the frontends configuration file'
+  assemble: src={{ etc_prefix }}/haproxy/frontends.d dest={{ etc_prefix }}/haproxy/compiled/04-frontends.cfg
+
+- name: 'Assemble the listen sections configuration file'
+  assemble: src={{ etc_prefix }}/haproxy/listen.d dest={{ etc_prefix }}/haproxy/compiled/05-listen.cfg
+
+- name: 'Assemble the final configuration file'
+  assemble: src={{ etc_prefix }}/haproxy/compiled dest={{ config_location }} backup=yes
+  notify: restart haproxy

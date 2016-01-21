@@ -1,0 +1,9 @@
+---
+- include_vars: var.yml
+
+- local_action:
+    region: cn-north-1
+    module: ec2_ami
+    image_id: "{{ ami_id }}"
+    delete_snapshot: True
+    state: absent

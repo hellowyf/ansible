@@ -1,0 +1,23 @@
+---
+
+- include_vars: var.yml
+
+- name: check if instance with name tag exists
+  command: aws ec2 describe-instances
+           --filter Name=tag:{{tag_key}},Values={{tag_value}}
+          --query 'Reservations[*].Instances[0].InstanceId' --output json
+  register: instanceid
+
+- name: allocate a eip with instance
+  ec2_eip: instance_id="{{ item }}" region=cn-north-1
+  with_items: instanceid.stdout
+
+- name: check if instance with name tag exists
+  command: aws ec2 describe-instances
+           --filter Name=tag:{{tag_key}},Values={{tag_value}}
+          --query 'Reservations[*].Instances[0].{instanceid:InstanceId,ip:PublicIpAddress}' --output json
+  register: instance
+
+- name: echo instance id
+  debug: "msg={{item.instanceid}} {{ item.ip }}"
+  with_items: instance.stdout

@@ -1,0 +1,35 @@
+---
+
+- name: stop ec2
+  hosts: localhost
+  gather_facts: False
+  connection: local
+  roles:
+    - stop_ec2
+  tags: stop
+
+- name: modify ec2
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  roles:
+    - stop_ec2
+    - modify_ec2
+    - start_ec2
+  tags: modify
+
+- name: start ec2
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  roles:
+    - start_ec2
+  tags: start
+
+- name: launch ec2
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  roles:
+    - launch_ec2
+  tags: launch

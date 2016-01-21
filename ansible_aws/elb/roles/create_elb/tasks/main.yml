@@ -1,0 +1,53 @@
+---
+- include_vars: var.yml
+
+- name: ping protocol
+  shell: echo "{{ ping_protocol }}"
+  register: ping_protocol
+
+- name: create elb in tcp protocol
+  local_action:
+    module: ec2_elb_lb
+    name: "{{ elb_name }}"
+    state: present
+    region: cn-north-1
+    zones: cn-north-1a
+    security_group_ids: "{{ sg_id }}"
+    listeners:
+      - protocol: "{{ protocol }}"
+        load_balancer_port: "{{ port }}"
+        instance_protocol: "{{ instance_protocol }}"
+        instance_port: "{{ instance_port }}"
+    health_check:
+        ping_protocol: tcp
+        ping_port:  "{{ ping_port }}"
+        response_timeout: "{{ timeout }}"
+        interval: "{{ interval }}"
+        unhealthy_threshold: "{{ unhealthy }}"
+        healthy_threshold: "{{ healthy }}"
+  when: ping_protocol.stdout == "tcp"
+  ignore_errors: yes
+
+- name: create elb in http protocol
+  local_action:
+    module: ec2_elb_lb
+    name: "{{ elb_name }}"
+    state: present
+    region: cn-north-1
+    zones: cn-north-1a
+    security_group_ids: "{{ sg_id }}"
+    listeners:
+      - protocol: "{{ protocol }}"
+        load_balancer_port: "{{ port }}"
+        instance_protocol: "{{ instance_protocol }}"
+        instance_port: "{{ instance_port }}"
+    health_check:
+        ping_protocol: http
+        ping_port: "{{ ping_port }}"
+        ping_path: "{{ ping_path }}"
+        response_timeout: "{{ timeout }}"
+        interval: "{{ interval }}"
+        unhealthy_threshold: "{{ unhealthy }}"
+        healthy_threshold: "{{ healthy }}"
+  when: ping_protocol.stdout == "http"
+  ignore_errors: yes

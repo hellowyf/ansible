@@ -1,0 +1,107 @@
+---
+port: 80
+
+haproxy_global:
+   maxconn: 100000
+   pidfile: /var/run/haproxy.pid
+   nbproc: 7
+   daemon: 1
+
+haproxy_defaults:
+   mode: http
+   log:
+    - address: 127.0.0.1
+      facility: local3
+      level: err
+   options:
+     - splice-auto
+     - http-keep-alive
+     - redispatch
+   retries: 3
+     # disconnect slow handshake clients early, protect from
+     # resources exhaustion attacks
+   timeout:
+     - param: http-request
+       value: 5s
+     - param: queue
+       value: 1m
+     - param: connect
+       value: 5s
+     - param: client
+       value: 30s
+     - param: server
+       value: 10s
+     - param: http-keep-alive
+       value: 5s
+     - param: check
+       value: 10s
+   maxconn: 100000
+
+haproxy_frontends:
+  - name: mobile.api.hunantv.com
+    bind:
+      - "*:80 accept-proxy"
+    maxconn: 100000
+    acl:
+      - name: web-getById
+        condition: "path_beg -i /video/getById"
+      - name: web-getSupport
+        condition: "path_beg -i /video/getSupport"
+      - name: web-comment
+        condition: "path_beg -i /comment"
+      - name: web-getList
+        condition: "path_beg -i /video/getList"
+      - name: web-relatedVideos
+        condition: "path_beg -i /video/relatedVideos"
+      - name: web-getSource
+        condition: "path_beg -i /video/getSource"
+      - name: web-search
+        condition: "path_beg -i /search/getResult"
+      - name: web-search
+        condition: "path_beg -i /search/autocomplete"
+      - name: web-search
+        condition: "path_beg -i /list"
+    default_backend: other
+    use_backend: 
+      - name: getById
+        condition: "if web-getById"
+      - name: getSupport
+        condition: "if web-getSupport"
+#
+haproxy_backends:
+  - name: getSupport 
+    balance: roundrobin
+    mode: http
+    port: 80
+    maxconn: 20000
+    params:
+      - "check inter 2s rise 3 fall 3 weight 1"
+    options:
+      - forwardfor
+  - name: getById 
+    balance: roundrobin
+    mode: http
+    port: 80
+    maxconn: 20000
+    params:
+      - "check inter 2s rise 3 fall 3 weight 1"
+    options:
+      - forwardfor
+  - name: other 
+    balance: roundrobin
+    mode: http
+    port: 80
+    maxconn: 20000
+    params:
+      - "check inter 2s rise 3 fall 3 weight 1"
+    options:
+      - forwardfor
+
+haproxy_listen:
+   - name: "stats :1936"
+     stats:
+      enabled: 1
+      hide_version: 1
+      uri: "/"
+      realm: "Haproxy\ Statistics"
+      auth: "admin:admin"

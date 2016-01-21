@@ -1,0 +1,4 @@
+---
+#指定tag的k和v执行添加和删除eip操作
+  tag_key: class
+  tag_value: test
